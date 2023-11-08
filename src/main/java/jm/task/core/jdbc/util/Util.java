@@ -9,6 +9,10 @@ public class Util {
     private static final String USERNAME = "bestuser";
     private static final String PASSWORD = "bestuser";
 
+    static {
+        loadDriver();
+    }
+
     private Util() {
     }
 
@@ -16,6 +20,14 @@ public class Util {
         try {
             return DriverManager.getConnection(URL, USERNAME, PASSWORD);
         } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void loadDriver() {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+        } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
     }
