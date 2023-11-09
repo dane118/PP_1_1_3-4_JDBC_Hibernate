@@ -2,8 +2,7 @@ package jm.task.core.jdbc;
 
 import jm.task.core.jdbc.util.Util;
 
-import java.sql.Connection;
-import java.sql.SQLException;
+import java.sql.*;
 
 /**
  * Алгоритм работы приложения:
@@ -18,14 +17,63 @@ import java.sql.SQLException;
 
 public class Main {
     public static void main(String[] args) throws SQLException {
-        String url = "jdbc:mysql://localhost:3306/my_db";
-        String username = "bestuser";
-        String password = "bestuser";
 
-        try (Connection connection = Util.openConnection()) {
-            System.out.println(connection.getTransactionIsolation());
+
+
+
+//        ***************************** Черновик *************************************
+
+        try (Connection connection = Util.openConnection();
+             Statement statement = connection.createStatement()) {
+//            System.out.println(connection.getTransactionIsolation());
+
+//            String createTable = """
+//                    CREATE TABLE IF NOT EXISTS users
+//                    (id INT,
+//                    age INT,
+//                    First_name VARCHAR(20)
+//                    )""";
+//            String deleteTable = """
+//                    DROP TABLE users
+//                    """;
+//
+//            String insertRows = """
+//                    INSERT INTO users(id, age, First_name)
+//                    VALUES (1, 25, 'Danil'),
+//                    (2, 85, 'Ivan'),
+//                    (3, 32, 'Petr'),
+//                    (4, 54, 'Kolya')
+//                    """;
+//            String select = """
+//                    SELECT * FROM users
+//                    """;
+//
+//            int i = statement.executeUpdate(insertRows);
+//
+//            ResultSet resultSet = statement.executeQuery(select);
+//
+//            while (resultSet.next()) {
+//                System.out.println(resultSet.getLong("id"));
+//                System.out.println(resultSet.getString("First_name"));
+//                System.out.println("-------");
+//            }
+
+            String sql = """
+                    SELECT * FROM users WHERE age > ?
+                    """;
+
+            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setLong(1, 80);
+
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                System.out.println(resultSet.getLong(1) + " " +  resultSet.getString(3));
+                System.out.println("----");
+            }
+
+
         }
-
         // реализуйте алгоритм здесь
     }
 }
