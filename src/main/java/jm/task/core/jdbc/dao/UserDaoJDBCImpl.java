@@ -3,18 +3,26 @@ package jm.task.core.jdbc.dao;
 import jm.task.core.jdbc.model.User;
 import jm.task.core.jdbc.util.Util;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class UserDaoJDBCImpl implements UserDao {
+
+    public final Connection connection = Util.openConnection();
+
     public UserDaoJDBCImpl() {
 
     }
 
+    @Override
     public void createUsersTable() {
-        try (Connection connection = Util.openConnection();
-             Statement statement = connection.createStatement()) {
+        try (Statement statement = connection.createStatement()) {
 
             String createTableUsersSQL = """
                     CREATE TABLE IF NOT EXISTS users
@@ -31,9 +39,9 @@ public class UserDaoJDBCImpl implements UserDao {
         }
     }
 
+    @Override
     public void dropUsersTable() {
-        try (Connection connection = Util.openConnection();
-             Statement statement = connection.createStatement()) {
+        try (Statement statement = connection.createStatement()) {
 
             String dropTableUsersSQL = """
                     DROP TABLE IF EXISTS users;
@@ -46,41 +54,63 @@ public class UserDaoJDBCImpl implements UserDao {
         }
     }
 
+    @Override
     public void saveUser(String name, String lastName, byte age) {
         String addNewUserSQL = """
                 INSERT INTO users (name, last_name, age)
                 VALUES (?, ?, ?);
                 """;
-        try (Connection connection = Util.openConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(addNewUserSQL)) {
+        try {
+            connection.setAutoCommit(false);
+            PreparedStatement preparedStatement = connection.prepareStatement(addNewUserSQL);
 
             preparedStatement.setString(1, name);
             preparedStatement.setString(2, lastName);
             preparedStatement.setByte(3, age);
 
             preparedStatement.executeUpdate();
+            connection.commit();
+
             System.out.printf("User c именем - %S добавлен в базу данных\n", name);
+            connection.setAutoCommit(true);
 
         } catch (SQLException e) {
+            try {
+                connection.rollback();
+            } catch (SQLException ex) {
+                throw new RuntimeException(ex);
+            }
             throw new RuntimeException(e);
         }
     }
 
+    @Override
     public void removeUserById(long id) {
         String deleteUserByIdSQL = """
                 DELETE FROM users WHERE id = ?;
                 """;
-        try (Connection connection = Util.openConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(deleteUserByIdSQL)) {
+
+        try {
+            connection.setAutoCommit(false);
+            PreparedStatement preparedStatement = connection.prepareStatement(deleteUserByIdSQL);
 
             preparedStatement.setLong(1, id);
             preparedStatement.executeUpdate();
 
+            connection.commit();
+            connection.setAutoCommit(true);
+
         } catch (SQLException e) {
+            try {
+                connection.rollback();
+            } catch (SQLException ex) {
+                throw new RuntimeException(ex);
+            }
             throw new RuntimeException(e);
         }
     }
 
+    @Override
     public List<User> getAllUsers() {
         List<User> users = new ArrayList<>();
 
@@ -88,8 +118,8 @@ public class UserDaoJDBCImpl implements UserDao {
                 SELECT id, name, last_name, age FROM users;
                 """;
 
-        try (Connection connection = Util.openConnection();
-             Statement statement = connection.createStatement()) {
+        try (Statement statement = connection.createStatement()) {
+
             ResultSet resultSet = statement.executeQuery(getAllUsersSQL);
 
             while (resultSet.next()) {
@@ -106,16 +136,25 @@ public class UserDaoJDBCImpl implements UserDao {
         return users;
     }
 
+    @Override
     public void cleanUsersTable() {
         String clearUsersTableSQL = """
                 DELETE FROM users;
                 """;
-        try (Connection connection = Util.openConnection();
-             Statement statement = connection.createStatement()) {
+        try {
+            connection.setAutoCommit(false);
+
+            Statement statement = connection.createStatement();
 
             statement.execute(clearUsersTableSQL);
-
+            connection.commit();
+            connection.setAutoCommit(true);
         } catch (SQLException e) {
+            try {
+                connection.rollback();
+            } catch (SQLException ex) {
+                throw new RuntimeException(ex);
+            }
             throw new RuntimeException(e);
         }
     }
