@@ -46,10 +46,13 @@ public final class Util {
         }
     }
 
-    public static void closeConnection() {
+    public static void close() {
         try {
             if (connection != null) {
                 connection.close();
+            }
+            if (sessionFactory != null) {
+                sessionFactory.close();
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
